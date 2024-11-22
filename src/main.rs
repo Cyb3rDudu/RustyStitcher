@@ -16,8 +16,8 @@ struct Args {
     #[arg(short, long)]
     binary: String,
 
-    #[arg(short, long)]
-    compression: String,
+    #[arg(short, long, required = false)]
+    compression: Vec<String>,
 
     #[arg(short, long)]
     encryption: String,
